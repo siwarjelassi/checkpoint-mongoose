@@ -1,33 +1,31 @@
 var express = require('express');
 var mongoose = require('mongoose');
-var bodyParser = require('body-parser');
+
 const port = 5000;
 const app = express();
 var Person= require('./models/person');
 const person = require('./models/person');
+app.use(express.json())
 
-mongoose.connect("mongodb://localhost/mongotest", { useNewUrlParser: true },
+mongoose.connect("mongodb://localhost/mongotest", { useUnifiedTopology: true, useNewUrlParser: true  },
 (err)=>{
-  if (err) { throw err; }});
-;
+  if (err) { throw err; }})
 
     //Create and Save a model:
 
 
-app.post('/addPerson', (req, res,err)=>{
-  var person1 = new Person({
-    name: 'siwar',
-    age:25,
-    favoriteFoods: 'test'
-  });
-  person1.save().then(data=>{
-    if(data){
-      res.send(data)
-        }else{
-          res.send('error')
-        }
-  })
-})
+app.post('/addPerson', async(req, res)=>{
+ let newPerson= req.body
+ try{
+  const addResult= await newPerson.save()
+  res.status(200).json("contact added"+ addResult);
+ }
+ 
+ catch (error) {
+  res.status(500).json({ errors: error });
+}})
+;
+
 
 
  //Create and Save many persons:
@@ -44,7 +42,7 @@ app.post('/addPersonArray', (req, res,err)=>{
     if(data){
       res.send(data)
         }else{
-          res.send('error')
+          res.send()
         }
   }) 
 })
@@ -52,13 +50,13 @@ app.post('/addPersonArray', (req, res,err)=>{
 //Search person by using model.find():
 app.get('/findPerson', (req, res)=>{
 
-  var findOneByFood = (food, done) => {
-    Person.findOne({favoriteFoods: food}, (err, data)=> {
-     console.log(data);
+  
+    Person.findOne({favoriteFoods: "apple"}, (err, data)=> {
+     res.send(data)
       if(err) return done(err);
-      return done(null, data)
-    })  
-}
+      return (null, data)
+   } )})
+
 
 //Search person by Id:
 app.get('/findPerson/:id', (req, res)=>{
@@ -70,22 +68,15 @@ app.get('/findPerson/:id', (req, res)=>{
   .catch(err=> next(err));
 })
 
-//find ferson by name 
-app.get('/findByfood/:food', (req, res)=> {
-  var findOneByFood = (food, done)=> {
-    Person.findOne( { "favoriteFoods": food }, (err, data)=> err ? done(err) : done(null, data) );
-    
-    
-}})
  // Perform New Updates on a Document Using model.findOneAndUpdate()
- app.put("/:_id"), async(req, res)=>{
+ app.put("/update/:_id"), async(req, res)=>{
    const {_id} = req.params ;
    try {
      const updateRes = await Person.findOneAndUpdate(
        {_id},
        { $set: req.body}
      );
-     res.json("favorite foods modified");
+     res.send("favorite foods modified");
    } catch (error) {
      res.status(500).json({errors: error});
    }
@@ -111,12 +102,11 @@ const removeManyPeople = (done)=> {
   Person.deleteMany(
   {name: nameToRemove},
   (err, data) => {
-  if (err) {
-  done(err);
-  }
+  if (err) {done(err);}
   done(null, data);
   })  
 }})
+
 //  Chain Search Query Helpers to Narrow Search Results
 
 app.get('/getPerson', (req,res,err)=>{
@@ -135,5 +125,4 @@ app.get('/getPerson', (req,res,err)=>{
 
 app.listen(port, function () {
   console.log("Server is running on "+ port +" port")
-})
 })
